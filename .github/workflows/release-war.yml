@@ -20,16 +20,16 @@ jobs:
         uses: actions/checkout@v7
 
       # 安装 JDK。建议和 pom.xml 里 <java.version> 保持一致
-      - name: Set up JDK 8
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '17'
           cache: maven
 
       # 打包成 war。有 mvnw 用 ./mvnw，没有就改成 mvn
       - name: Build WAR
-        run: mvnw -B clean package -DskipTests
+        run: ./mvnw -B clean package -DskipTests
         # run: mvn -B clean package -DskipTests
 
       # 打个日志方便排查（可删）
