@@ -1,0 +1,71 @@
+name: Release WAR
+
+# 触发条件：推送 tag 时执行
+on:
+  push:
+    tags:
+      - 'v*'      # 只匹配 v1.0.0 / v2.3.1 这类 tag
+      # - '*'     # 如果想匹配"任意 tag"，用这一行替代上面那行
+
+# 关键：创建 Release 需要 GITHUB_TOKEN 有写权限
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # 安装 JDK。建议和 pom.xml 里 <java.version> 保持一致
+      - name: Set up JDK 8
+        uses: actions/setup-java@v5
+        with:
+          distribution: oracle-openjdk
+          java-version: '8'
+          cache: maven
+
+      # 打包成 war。有 mvnw 用 ./mvnw，没有就改成 mvn
+      - name: Build WAR
+        run: ./mvnw -B clean package -DskipTests
+        # run: mvn -B clean package -DskipTests
+
+      # 打个日志方便排查（可删）
+      - name: List artifacts
+        run: ls -lh target/*.war
+
+      # 可选：把 target 下带版本号的名字统一成 应用名-版本号.war
+      # 例如 target/demo-0.0.1-SNAPSHOT.war -> demo-v1.2.3.war
+      - name: Normalize WAR name
+        if: always()
+        run: |
+          mkdir -p dist
+          for f in target/*.war; do
+            cp "$f" "dist/$(basename "$f")"
+          done
+          ls -lh dist
+
+      # 创建 Release（已存在同名 Release 时会复用并覆盖资源）
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            dist/*.war
+          generate_release_notes: true   # 自动生成变更说明
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---------------------------------------------------------------
+      # 备选方案：不依赖第三方 Action，直接用 runner 自带的 gh CLI
+      # 把上面的 "Create GitHub Release" 步骤换成下面这段即可：
+      #
+      # - name: Create Release with gh CLI
+      #   env:
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: gh release create "${GITHUB_REF_NAME}" dist/*.war --generate-notes
+      # ---------------------------------------------------------------
+
