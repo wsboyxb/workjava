@@ -29,7 +29,7 @@ jobs:
 
       # 打包成 war。有 mvnw 用 ./mvnw，没有就改成 mvn
       - name: Build WAR
-        run: ./mvnw -B clean package -DskipTests
+        run: ./mvn -B clean package -DskipTests
         # run: mvn -B clean package -DskipTests
 
       # 打个日志方便排查（可删）
